@@ -38,8 +38,10 @@ angular.module('ui.select2', []).value('uiSelect2Config', {}).directive('uiSelec
         Convert from Select2 view-model to Angular view-model.
         */
         var convertToAngularModel = function(select2_data) {
+          if (opts.multiple && !opts.simple_tags) return select2_data
+
           var model;
-          if (opts.simple_tags) {
+          if (opts.simple_tags || opts.multiple) {
             model = [];
             angular.forEach(select2_data, function(value, index) {
               model.push(value.id);
@@ -69,6 +71,7 @@ angular.module('ui.select2', []).value('uiSelect2Config', {}).directive('uiSelec
           } else {
             model = angular_data;
           }
+
           return model;
         };
 
@@ -82,6 +85,9 @@ angular.module('ui.select2', []).value('uiSelect2Config', {}).directive('uiSelec
 
         if (controller) {
           // Watch the model for programmatic changes
+
+//TODO this can't disambiguate programitic changes from user changes so
+//TODO it loops though and wipes out changes, especially on multiple...
            scope.$watch(tAttrs.ngModel, function(current, old) {
             if (!current) {
               return;
@@ -89,19 +95,21 @@ angular.module('ui.select2', []).value('uiSelect2Config', {}).directive('uiSelec
             if (current === old) {
               return;
             }
-            controller.$render();
+
+
+             if (!opts.multiple) controller.$render();
           }, true);
           controller.$render = function () {
             if (isSelect) {
               elm.select2('val', controller.$viewValue);
             } else {
               if (opts.multiple) {
-                var viewValue = controller.$viewValue;
-                if (angular.isString(viewValue)) {
-                  viewValue = viewValue.split(',');
-                }
-                elm.select2(
-                  'data', convertToSelect2Model(viewValue));
+//                var viewValue = controller.$viewValue;
+//                if (angular.isString(viewValue)) {
+//                  viewValue = viewValue.split(',');
+//                }
+//                elm.select2(
+//                  'data', convertToSelect2Model(viewValue));
               } else {
                 if (angular.isObject(controller.$viewValue)) {
                   elm.select2('data', controller.$viewValue);
@@ -200,6 +208,7 @@ angular.module('ui.select2', []).value('uiSelect2Config', {}).directive('uiSelec
           elm.select2(opts);
 
           // Set initial value - I'm not sure about this but it seems to need to be there
+// old          elm.val(controller.$viewValue);
           elm.select2('data', controller.$modelValue);
           // important!
           controller.$render();
